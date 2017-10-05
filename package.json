@@ -1,5 +1,5 @@
 {
-  "name": "react-rest",
+  "name": "react-rest-client",
   "version": "1.0.0",
   "description": "Consuming REST APIs the React way.",
   "main": "index.js",
