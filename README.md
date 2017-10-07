@@ -19,19 +19,27 @@ yarn add react-rest-client
 ### The Basics
 React Rest Client borrows many ideas from React Router in terms of syntax. Here is aa example of consuming a simple Todo backend API.
 
-```
+```jsx
 import { Client, Endpoint } from 'react-rest-client'
 
-<Client base='http://example.com'>
-  <div>
-    <h1>Todo App</h1>
-      <Endpoint name='todos' path='todos' render={({ todos }) => todos ? (
-          <ul>
-            {todos.map((todo, index) => (
-              <li key={index}>{todo}</li>
-            ))}
-          </ul>
-      ) : null} />
+<Client base='http://localhost:8888' middleware={[middleware.jsonMiddleware]}>
+  <Endpoints configs={{
+      todos: { path: 'ktnyt' }
+    }} render={({ todos }) => todos.data ? (
+      <div>
+        <input type='text' onKeyPress={onEnter(event => {
+            todos.handlers.add({ text: event.target.value })
+          })} />
+        <ul>
+          {todos.data.map((todo, i) => (
+            <li key={i}>
+              {todo.text}
+              <input type='button' onClick={event => todos.handlers.destroy(todo.uuid)} value='Delete' />
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null} />
   </div>
 </Client>
 ```
