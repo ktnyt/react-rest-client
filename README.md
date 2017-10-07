@@ -22,7 +22,7 @@ React Rest Client borrows many ideas from React Router in terms of syntax. Here 
 ```jsx
 import { Client, Endpoint } from 'react-rest-client'
 
-<Client base='http://localhost:8888' middleware={[middleware.jsonMiddleware]}>
+<Client base='http://www.example.com' middleware={[middleware.jsonMiddleware]}>
   <Endpoints configs={{
       todos: { path: 'ktnyt' }
     }} render={({ todos }) => todos.data ? (
@@ -40,6 +40,5 @@ import { Client, Endpoint } from 'react-rest-client'
         </ul>
       </div>
     ) : null} />
-  </div>
 </Client>
 ```
