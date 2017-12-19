@@ -1,44 +1,39 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 
-import _ from 'lodash'
+import ListHandler from './ListHandler'
+import ItemHandler from './ItemHandler'
+import { createMiddleware, fetchWithMiddleware } from './middleware'
+import { METHOD } from './types'
 
-import Handlers from './Handlers'
-import { createMiddleware, bypassMiddleware } from './middleware'
-import { toProp } from './utils'
-
-const defaultConfig = {
-  pk: '',
-  params: {},
-  middleware: [],
+const fillDefaults = object => ({
+  options: {},
   noFetchOnMount: false,
   suppressUpdate: false,
-  persist: false,
-}
-
-const joinPath = (pathA, pathB) => Array.isArray(pathB) ? (
-  pathB[0][0] === '/' ? pathB : [...pathA, ...pathB]
-) : (joinPath(pathA, [pathB]))
+  ...object,
+})
 
 class Endpoints extends Component {
   handlers = {}
 
   static propTypes = {
-    configs: PropTypes.object.isRequired,
     component: PropTypes.func,
     render: PropTypes.func,
     children: PropTypes.oneOfType([
       PropTypes.func,
       PropTypes.node,
     ]),
+
+    specs: PropTypes.object.isRequired,
+    persist: PropTypes.string,
   }
 
   static contextTypes = {
     rest: PropTypes.shape({
       base: PropTypes.string.isRequired,
       path: PropTypes.array.isRequired,
-      headers: PropTypes.object,
-    })
+      middleware: PropTypes.array.isRequired,
+    }),
   }
 
   static childContextTypes = {
@@ -46,13 +41,19 @@ class Endpoints extends Component {
   }
 
   getChildContext = () => {
-    const { configs } = this.props
-    const { base, path: contextPath, middleware: contextMiddleware } = this.context
+    const { specs, persist } = this.props
+    const { base, path: contextPath, middleware } = this.context.rest
 
-    const persist = Object.keys(configs).map(config => ({ ...defaultConfig, ...config })).find(toProp('persist'))
+    const path = persist ? (
+      specs[persist].path[0] === '/' ? (
+        [specs[persist].path]
+      ) : (
+        [...contextPath, specs[persist].path]
+      )
+    ) : (
+      contextPath
+    )
 
-    const path = persist ? joinPath(contextPath, persist.path) : contextPath
-    const middleware = persist ? [...contextMiddleware, ...persist.middleware] : contextMiddleware
     return {
       rest: {
         ...this.context.rest,
@@ -65,114 +66,93 @@ class Endpoints extends Component {
 
   constructor(props, context) {
     super(props, context)
-
-    const { configs } = this.props
-    const names = Object.keys(configs)
-    const state = {}
-    for(const name of names) {
-      state[name] = false
-    }
-
-    this.state = state
+    this.state = Object.keys(props.specs).map(name => ({
+      [name]: false,
+    })).reduce((prev, curr) => ({ ...prev, ...curr }))
   }
 
   componentWillMount = () => {
-    const { configs } = this.props
-    const { rest } = this.context
-
-    this.createHandlers(configs, rest)
-
-    for(const name of Object.keys(configs)) {
-      if(!configs[name].noFetchOnMount) {
-        this.handlers[name].refresh()
+    this.createHandlers(this.props, this.context)
+    Object.keys(this.props.specs).forEach(name => {
+      if(!this.props.specs[name].noFetchOnMount) {
+        this.handlers[name].browse(this.props.options)
       }
-    }
+    })
   }
 
   componentWillReceiveProps = (nextProps, nextContext) => {
-    if(!_.isEqual(this.context.rest, nextContext.rest) || !_.isEqual(this.props.configs, nextProps.configs)) {
-      const { configs } = nextProps
-      const { rest } = nextContext
-
-      this.createHandlers(configs, rest)
-
-      for(const name of Object.keys(configs)) {
-        if(!configs[name].suppressUpdate) {
-          this.handlers[name].refresh()
-        }
+    this.createHandlers(nextProps, nextContext)
+    Object.keys(nextProps.specs).forEach(name => {
+      if(!nextProps.specs[name].noFetchOnMount) {
+        this.handlers[name].browse(nextProps.options)
       }
-    }
+    })
   }
 
-  updateData = name => nextData => {
-    const currData = this.state.data
-    const data = { ...currData, nextData }
-    this.setData(name)(data)
-  }
+  createHandlers = (props, context) => {
+    const { specs } = this.props
 
-  setData = name => data => this.setState({ [name]: data })
+    Object.keys(specs).forEach(name => {
+      const { pk, path: propsPath, options, middleware: propsMiddleware, suppressUpdate } = fillDefaults(specs[name])
+      const { base, path: contextPath, middleware: contextMiddleware } = context.rest
 
-  createHandlers = (configs, rest) => {
-    const { base, path: contextPath, middleware: contextMiddleware } = rest
+      const path = propsPath[0] === '/' ? propsPath.slice(1) : [...contextPath, propsPath].join('/')
+      const url = `${base}/${path}`
 
-    for(const name of Object.keys(configs)) {
-      const {
-        path: configPath,
-        pk,
-        params,
-        middleware: configMiddleware,
-      } = { ...defaultConfig, ...configs[name] }
-
-      const path = joinPath(contextPath, configPath)
-      const middleware = [...contextMiddleware, ...configMiddleware]
-      const handlers = new Handlers(base, path, middleware).bindParams(params)
-
-      if(pk.length) {
-        handlers.bindPrimaryKey(pk)
-        handlers.addMiddleware(bypassMiddleware(this.updateData(name)))
-      } else {
-        const refreshMiddleware = createMiddleware(o=>o, (response, request) => {
-          if(request.hasOwnProperty('method') && request.method !== 'GET') {
-            handlers.browse().then(this.setData(name))
+      if(!pk) {
+        const update = createMiddleware(request => request, p => p.then(response => {
+          if(response.request.type !== METHOD.BROWSE) {
+            this.handlers[name].browse(options)
           } else {
-            this.setData(name)(response)
+            if(!suppressUpdate) {
+              this.setState({ [name]: response })
+            }
           }
-
           return response
-        })
-
-        handlers.addMiddleware(refreshMiddleware)
+        }))
+  
+        const middleware = [...contextMiddleware, ...propsMiddleware, update]
+        const altfetch = fetchWithMiddleware(middleware)
+        this.handlers[name] = new ListHandler(url, altfetch)
+      } else {
+        const update = createMiddleware(request => request, p => p.then(response => {
+          if(response.request.type === METHOD.DESTROY) {
+            this.handlers[name].read()
+          } else {
+            if(!suppressUpdate) {
+              this.setState({ [name]: response })
+            }
+          }
+          return response
+        }))
+  
+        const middleware = [...contextMiddleware, ...propsMiddleware, update]
+        const altfetch = fetchWithMiddleware(middleware)
+        this.handlers[name] = new ItemHandler(url, pk, altfetch)
       }
-
-      this.handlers[name] = handlers
-    }
+    })
   }
 
   render = () => {
-    const { component, render, children } = this.props
-    const props = {}
+    const { component, render, children, specs } = this.props
+    const props = Object.keys(specs).map(name => ({
+      [name]: {
+        response: this.state[name],
+        handlers: this.handlers[name],
+      },
+    })).reduce((prev, curr) => ({ ...prev, ...curr }))
 
-    const names = Object.keys(this.state)
-
-    for(const name of names) {
-      const data = this.state[name]
-      const handlers = this.handlers[name]
-      props[name] = { data, handlers }
-    }
-
-    return (
-      component ? (
-        React.createElement(component, props)
-      ) : render ? (
-        render(props)
-      ) : children ? (
-        typeof children === 'function' ? (
-          children(props)
-        ) : !Array.isArray(children) || children.length ? (
-          React.cloneElement(React.Children.only(children), props)
-        ) : null
+    return component ? (
+      React.createElement(component, props)
+    ) : render ? (
+      render(props)
+    ) : children ? (
+      typeof children === 'function' ? (
+        children(props)
+      ) : !Array.isArray(children) || children.length ? (
+        React.cloneElement(React.Children.only(children), props)
       ) : null
-    )
+    ) : null
   }
 }
 

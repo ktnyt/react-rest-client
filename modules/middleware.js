@@ -1,10 +1,8 @@
-import { bypass, combine, chain, toProp } from './utils'
-
 export const createMiddleware = (before, after) => ({ before, after })
 
-export const addHeadersMiddleware = headers => createMiddleware(request => {
+export const injectHeaders = headers => createMiddleware(request => {
   if(!request) {
-    return { headers }
+    return  { headers }
   }
 
   if(!request.hasOwnProperty('headers')) {
@@ -19,37 +17,65 @@ export const addHeadersMiddleware = headers => createMiddleware(request => {
     headers: {
       ...request.headers,
       ...headers,
-    }
+    },
   }
-}, o=>o)
+}, response => response)
 
-export const jsonMiddleware = createMiddleware(request => {
+export const injectJsonHeaders = (onRequest=true, onResponse=true) => request => {
+  if(!request) {
+    request = {}
+  }
+
   if(!request.hasOwnProperty('headers')) {
     request.headers = {}
   }
 
-  request.headers['Accept'] = 'application/json'
-  request.headers['Content-Type'] = 'application/json; charset=utf-8'
+  if(onRequest) {
+    request.headers['Accept'] = 'application/json'
 
-  if(typeof request.body === 'object') {
-    request.body = JSON.stringify(request.body)
+    if(!!request.body) {
+      request.body = JSON.stringify(request.body)
+    }
+  }
+
+  if(onResponse) {
+    request.headers['Content-Type'] = 'application/json; charset=utf-8'
   }
 
   return request
-}, response => response.json())
+}
 
-export const bypassMiddleware = f => createMiddleware(o=>o, bypass(f))
+export const parseJsonResponse = (destructive=false) => response => {
+  if(destructive) {
+    return response.json()
+  }
 
-export const fetchWithMiddleware = middleware => (url, request) => {
-  const before = combine(middleware.map(toProp('before')))
-  const after = chain(middleware.map(toProp('after')))
-  const modded = before(request)
-  return after(fetch(url, modded), modded)
+  const clone = response.clone()
+
+  return clone.json().then(data => {
+    response.data = data
+    return response
+  })
+}
+
+export const handleJson = (destructive=false) => createMiddleware(injectJsonHeaders(), parseJsonResponse(destructive))
+
+export const fetchWithMiddleware = middleware => (url, request={}) => {
+  const before = middleware.map(({ before }) => before)
+  const after = middleware.map(({ after }) => after)
+  const modded = before.reduce((x, f) => f(x), request)
+  const promise = fetch(url, modded)
+
+  return promise.then(response => {
+    response.request = modded
+    return after.reduce((x, f) => f(x), response)
+  })
 }
 
 export default {
-  createMiddleware,
-  addHeadersMiddleware,
-  jsonMiddleware,
-  bypassMiddleware,
+  injectHeaders,
+  injectJsonHeaders,
+  parseJsonResponse,
+  handleJson,
+  fetchWithMiddleware,
 }

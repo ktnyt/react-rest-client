@@ -1,5 +1,5 @@
 import expect from 'expect'
-import { createMiddleware, jsonMiddleware, bypassMiddleware } from '../middleware'
+import { createMiddleware, handleJson } from '../middleware'
 import { mockJsonResponse } from './helpers'
 
 describe('Rest', () => {
@@ -13,12 +13,12 @@ describe('Rest', () => {
     })
   })
 
-  describe('jsonMiddleware', () => {
+  describe('handleJson', () => {
     it('should add JSON handling to request and response', () => {
       const sampleJson = { foo: 'foo', bar: 'bar' }
       const jsonResponse = mockJsonResponse(sampleJson)
 
-      const request = jsonMiddleware.before({ headers: {}, body: sampleJson })
+      const request = handleJson(true).before({ headers: {}, body: sampleJson })
 
       expect(request).toEqual({
         headers: {
@@ -28,24 +28,9 @@ describe('Rest', () => {
         body: JSON.stringify(sampleJson)
       })
 
-      const response = jsonMiddleware.after(jsonResponse)
+      const response = handleJson(true).after(jsonResponse)
 
       expect(response).resolves.toEqual(sampleJson)
-    })
-  })
-
-  describe('bypassMiddleware', () => {
-    it('should bypass a given function on response', () => {
-      const addOne = { exec: i => i + 1 }
-      const bypass = bypassMiddleware(i => addOne.exec(i)).after
-
-      const spy = jest.spyOn(addOne, 'exec')
-
-      expect(bypass(42)).toBe(42)
-      expect(spy).toHaveBeenCalled()
-
-      spy.mockReset()
-      spy.mockRestore()
     })
   })
 })

@@ -4,16 +4,11 @@ import PropTypes from 'prop-types'
 class Client extends Component {
   static propTypes = {
     base: PropTypes.string.isRequired,
-    path: PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.array,
-    ]),
     middleware: PropTypes.array,
     children: PropTypes.node.isRequired,
   }
 
   static defaultProps = {
-    path: [],
     middleware: [],
   }
 
@@ -26,15 +21,13 @@ class Client extends Component {
   }
 
   getChildContext = () => {
-    const { base, path: propPath, middleware } = this.props
-
-    const path = Array.isArray(propPath) ? propPath : [propPath]
+    const { base, middleware } = this.props
 
     return {
       rest: {
         ...this.context.rest,
         base,
-        path,
+        path: [],
         middleware,
       },
     }
