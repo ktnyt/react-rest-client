@@ -28,7 +28,7 @@ describe('Rest', () => {
 
       mount(
         <Client base='http://localhost:8888'>
-          <Endpoints specs={{ [path]: { path: path, noFetchOnMount: true } }} render={Child} />
+          <Endpoints configs={{ [path]: { path: path, noFetchOnMount: true } }} render={Child} />
         </Client>
       )
     })

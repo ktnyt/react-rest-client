@@ -24,7 +24,7 @@ class Endpoints extends Component {
       PropTypes.node,
     ]),
 
-    specs: PropTypes.object.isRequired,
+    configs: PropTypes.object.isRequired,
     persist: PropTypes.string,
   }
 
@@ -41,14 +41,14 @@ class Endpoints extends Component {
   }
 
   getChildContext = () => {
-    const { specs, persist } = this.props
+    const { configs, persist } = this.props
     const { base, path: contextPath, middleware } = this.context.rest
 
     const path = persist ? (
-      specs[persist].path[0] === '/' ? (
-        [specs[persist].path]
+      configs[persist].path[0] === '/' ? (
+        [configs[persist].path]
       ) : (
-        [...contextPath, specs[persist].path]
+        [...contextPath, configs[persist].path]
       )
     ) : (
       contextPath
@@ -66,15 +66,15 @@ class Endpoints extends Component {
 
   constructor(props, context) {
     super(props, context)
-    this.state = Object.keys(props.specs).map(name => ({
+    this.state = Object.keys(props.configs).map(name => ({
       [name]: false,
     })).reduce((prev, curr) => ({ ...prev, ...curr }))
   }
 
   componentWillMount = () => {
     this.createHandlers(this.props, this.context)
-    Object.keys(this.props.specs).forEach(name => {
-      if(!this.props.specs[name].noFetchOnMount) {
+    Object.keys(this.props.configs).forEach(name => {
+      if(!this.props.configs[name].noFetchOnMount) {
         this.handlers[name].browse(this.props.options)
       }
     })
@@ -82,18 +82,18 @@ class Endpoints extends Component {
 
   componentWillReceiveProps = (nextProps, nextContext) => {
     this.createHandlers(nextProps, nextContext)
-    Object.keys(nextProps.specs).forEach(name => {
-      if(!nextProps.specs[name].noFetchOnMount) {
+    Object.keys(nextProps.configs).forEach(name => {
+      if(!nextProps.configs[name].noFetchOnMount) {
         this.handlers[name].browse(nextProps.options)
       }
     })
   }
 
   createHandlers = (props, context) => {
-    const { specs } = this.props
+    const { configs } = this.props
 
-    Object.keys(specs).forEach(name => {
-      const { pk, path: propsPath, options, middleware: propsMiddleware, suppressUpdate } = fillDefaults(specs[name])
+    Object.keys(configs).forEach(name => {
+      const { pk, path: propsPath, options, middleware: propsMiddleware, suppressUpdate } = fillDefaults(configs[name])
       const { base, path: contextPath, middleware: contextMiddleware } = context.rest
 
       const path = propsPath[0] === '/' ? propsPath.slice(1) : [...contextPath, propsPath].join('/')
@@ -134,8 +134,8 @@ class Endpoints extends Component {
   }
 
   render = () => {
-    const { component, render, children, specs } = this.props
-    const props = Object.keys(specs).map(name => ({
+    const { component, render, children, configs } = this.props
+    const props = Object.keys(configs).map(name => ({
       [name]: {
         response: this.state[name],
         handlers: this.handlers[name],
