@@ -101,7 +101,7 @@ class Endpoints extends Component {
       const url = `${base}/${path}`
 
       if(!pk) {
-        const update = createMiddleware(request => request, p => p.then(response => {
+        const update = createMiddleware(request => request, response => {
           if(response.request.type !== METHOD.BROWSE) {
             this.handlers[name].browse(options)
           } else {
@@ -110,13 +110,13 @@ class Endpoints extends Component {
             }
           }
           return response
-        }))
+        })
   
         const middleware = [...contextMiddleware, ...propsMiddleware, update]
         const altfetch = fetchWithMiddleware(middleware)
         this.handlers[name] = new ListHandler(url, altfetch)
       } else {
-        const update = createMiddleware(request => request, p => p.then(response => {
+        const update = createMiddleware(request => request, response => {
           if(response.request.type === METHOD.DESTROY) {
             this.handlers[name].read()
           } else {
@@ -125,7 +125,7 @@ class Endpoints extends Component {
             }
           }
           return response
-        }))
+        })
   
         const middleware = [...contextMiddleware, ...propsMiddleware, update]
         const altfetch = fetchWithMiddleware(middleware)

@@ -64,12 +64,12 @@ export const fetchWithMiddleware = middleware => (url, request={}) => {
   const before = middleware.map(({ before }) => before)
   const after = middleware.map(({ after }) => after)
   const modded = before.reduce((x, f) => f(x), request)
-  const promise = fetch(url, modded)
-
-  return promise.then(response => {
+  const promise = fetch(url, modded).then(response => {
     response.request = modded
-    return after.reduce((x, f) => f(x), response)
+    return response
   })
+
+  return after.reduce((p, f) => p.then(f), promise)
 }
 
 export default {
