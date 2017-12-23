@@ -7,6 +7,7 @@ import { createMiddleware, fetchWithMiddleware } from './middleware'
 import { METHOD } from './types'
 
 const fillDefaults = object => ({
+  middleware: [],
   options: {},
   noFetchOnMount: false,
   suppressUpdate: false,

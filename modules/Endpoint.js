@@ -20,6 +20,7 @@ class Endpoint extends Component {
 
     path: PropTypes.string.isRequired,
     pk: PropTypes.string,
+    middleware: PropTypes.array,
 
     options: PropTypes.object,
 
@@ -30,6 +31,8 @@ class Endpoint extends Component {
   }
 
   static defaultProps = {
+    middleware: [],
+
     options: {},
 
     noFetchOnMount: false,
