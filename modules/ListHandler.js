@@ -8,7 +8,7 @@ class ListHandler {
   
   constructor(url, fetch) {
     this.url = url
-    this.fetch = fetch
+    this._fetch = fetch
   }
 
   buildParams = options => {
@@ -22,7 +22,7 @@ class ListHandler {
     return `?${pairs.join('&')}`
   }
 
-  call = (url, request, type) => this.fetch(url, { ...request, type })
+  call = (url, request, type) => this._fetch(url, { ...request, type })
 
   browse  = (options)  => this.call(`${this.url}${this.buildParams(options)}`, {},  METHOD.BROWSE )
   read    = (pk)       => this.call(`${this.url}/${pk}`, {},                        METHOD.READ   )
@@ -32,7 +32,9 @@ class ListHandler {
   replace = (pk, body) => this.call(`${this.url}/${pk}`, { method: 'PUT',   body }, METHOD.REPLACE)
   wipe    = (options)  => this.call(`${this.url}${this.buildParams(options)}`, { method: 'DELETE' }, METHOD.WIPE)
 
-  bind = pk => new ItemHandler(this.url, pk, this.fetch)
+  fetch = (options) => this.browse()
+
+  bind = pk => new ItemHandler(this.url, pk, this._fetch)
 }
 
 export default ListHandler
