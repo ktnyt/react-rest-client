@@ -1,6 +1,6 @@
 {
   "name": "react-rest-client",
-  "version": "1.0.0-rc2",
+  "version": "1.0.0-rc4",
   "description": "Consuming REST APIs the React way.",
   "main": "index.js",
   "repository": "https://github.com/ktnyt/react-rest-client",

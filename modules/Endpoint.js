@@ -77,14 +77,14 @@ class Endpoint extends Component {
   componentWillMount = () => {
     this.createHandlers(this.props, this.context)
     if(!this.props.noFetchOnMount) {
-      this.handlers.browse(this.props.options)
+      this.handlers.fetch(this.props.options)
     }
   }
 
   componentWillReceiveProps = (nextProps, nextContext) => {
     this.createHandlers(nextProps, nextContext)
     if(!nextProps.noFetchOnMount) {
-      this.handlers.browse(nextProps.options)
+      this.handlers.fetch(nextProps.options)
     }
   }
 

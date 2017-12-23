@@ -75,7 +75,7 @@ class Endpoints extends Component {
     this.createHandlers(this.props, this.context)
     Object.keys(this.props.configs).forEach(name => {
       if(!this.props.configs[name].noFetchOnMount) {
-        this.handlers[name].browse(this.props.options)
+        this.handlers[name].fetch(this.props.options)
       }
     })
   }
@@ -84,7 +84,7 @@ class Endpoints extends Component {
     this.createHandlers(nextProps, nextContext)
     Object.keys(nextProps.configs).forEach(name => {
       if(!nextProps.configs[name].noFetchOnMount) {
-        this.handlers[name].browse(nextProps.options)
+        this.handlers[name].fetch(nextProps.options)
       }
     })
   }
