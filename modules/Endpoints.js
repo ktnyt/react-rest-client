@@ -27,6 +27,11 @@ class Endpoints extends Component {
 
     configs: PropTypes.object.isRequired,
     persist: PropTypes.string,
+    middleware: PropTypes.array,
+  }
+
+  static defaultProps = {
+    middleware: [],
   }
 
   static contextTypes = {
@@ -91,10 +96,10 @@ class Endpoints extends Component {
   }
 
   createHandlers = (props, context) => {
-    const { configs } = this.props
+    const { configs, middleware: propsMiddleware } = this.props
 
     Object.keys(configs).forEach(name => {
-      const { pk, path: propsPath, options, middleware: propsMiddleware, suppressUpdate } = fillDefaults(configs[name])
+      const { pk, path: propsPath, options, middleware: configMiddleware, suppressUpdate } = fillDefaults(configs[name])
       const { base, path: contextPath, middleware: contextMiddleware } = context.rest
 
       const path = propsPath[0] === '/' ? propsPath.slice(1) : [...contextPath, propsPath].join('/')
@@ -112,7 +117,7 @@ class Endpoints extends Component {
           return response
         })
   
-        const middleware = [...contextMiddleware, ...propsMiddleware, update]
+        const middleware = [...contextMiddleware, ...propsMiddleware, ...configMiddleware, update]
         const altfetch = fetchWithMiddleware(middleware)
         this.handlers[name] = new ListHandler(url, altfetch)
       } else {
@@ -127,7 +132,7 @@ class Endpoints extends Component {
           return response
         })
   
-        const middleware = [...contextMiddleware, ...propsMiddleware, update]
+        const middleware = [...contextMiddleware, ...propsMiddleware, ...configMiddleware, update]
         const altfetch = fetchWithMiddleware(middleware)
         this.handlers[name] = new ItemHandler(url, pk, altfetch)
       }
