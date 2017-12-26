@@ -1,14 +1,13 @@
 import ItemHandler from './ItemHandler'
 import { METHOD } from './types'
 
-const kvMap = object => object.keys().map(key => ({ key, value: object[key] }))
-
 class ListHandler {
   params = {}
   
-  constructor(url, fetch) {
+  constructor(url, fetch, params) {
     this.url = url
     this._fetch = fetch
+    this.params = params
   }
 
   buildParams = options => {
@@ -18,8 +17,8 @@ class ListHandler {
       return ''
     }
   
-    const pairs = kvMap(params).map(({ key, value }) => `${key}=${value}`)
-    return `?${pairs.join('&')}`
+    const search = new URLSearchParams(params)
+    return `?${search.toString()}`
   }
 
   call = (url, request, type) => this._fetch(url, { ...request, type })

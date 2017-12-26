@@ -28,10 +28,13 @@ class Endpoints extends Component {
     configs: PropTypes.object.isRequired,
     persist: PropTypes.string,
     middleware: PropTypes.array,
+
+    onChange: PropTypes.func,
   }
 
   static defaultProps = {
     middleware: [],
+    onChange: () => {},
   }
 
   static contextTypes = {
@@ -48,24 +51,29 @@ class Endpoints extends Component {
 
   getChildContext = () => {
     const { configs, persist } = this.props
-    const { base, path: contextPath, middleware } = this.context.rest
+    const { base, path: contextPath } = this.context.rest
 
-    const path = persist ? (
-      configs[persist].path[0] === '/' ? (
-        [configs[persist].path]
-      ) : (
-        [...contextPath, configs[persist].path]
-      )
-    ) : (
-      contextPath
-    )
+    const selectPath = (paths, path) => {
+      if(path[0] === '/') {
+        return [path.slice(1)]
+      }
+      return [...paths, path]
+    }
+
+    const addPk = (paths, pk) => {
+      if(pk) {
+        return [...paths, pk]
+      }
+      return paths
+    }
+
+    const path = persist ? addPk(selectPath(contextPath, configs[persist].path), configs[persist].pk) : contextPath
 
     return {
       rest: {
         ...this.context.rest,
         base,
         path,
-        middleware,
       }
     }
   }
@@ -95,12 +103,47 @@ class Endpoints extends Component {
     })
   }
 
+  shouldComponentUpdate = (nextProps, nextState) => {
+    return JSON.stringify(this.state) !== JSON.stringify(nextState)
+  }
+
+  componentDidUpdate = (prevProps, prevContext) => {
+    const { configs, onChange } = this.props
+
+    const data = Object.keys(configs).map(name => ({
+      [name]: {
+        response: this.state[name],
+        handlers: this.handlers[name],
+      },
+    })).reduce((prev, curr) => ({ ...prev, ...curr }))
+
+    Object.keys(data).forEach(name => {
+      configs[name].onChange(data[name])
+    })
+
+    onChange(data)
+  }
+
   createHandlers = (props, context) => {
-    const { configs, middleware: propsMiddleware } = this.props
+    const {
+      configs,
+      middleware: propsMiddleware,
+    } = this.props
 
     Object.keys(configs).forEach(name => {
-      const { pk, path: propsPath, options, middleware: configMiddleware, suppressUpdate } = fillDefaults(configs[name])
-      const { base, path: contextPath, middleware: contextMiddleware } = context.rest
+      const {
+        pk,
+        path: propsPath,
+        options,
+        middleware: configMiddleware,
+        suppressUpdate,
+      } = fillDefaults(configs[name])
+
+      const {
+        base,
+        path: contextPath,
+        middleware: contextMiddleware,
+      } = context.rest
 
       const path = propsPath[0] === '/' ? propsPath.slice(1) : [...contextPath, propsPath].join('/')
       const url = `${base}/${path}`
@@ -108,7 +151,7 @@ class Endpoints extends Component {
       if(!pk) {
         const update = createMiddleware(request => request, response => {
           if(response.request.type !== METHOD.BROWSE) {
-            this.handlers[name].browse(options)
+            this.handlers[name].browse()
           } else {
             if(!suppressUpdate) {
               this.setState({ [name]: response })
@@ -119,7 +162,7 @@ class Endpoints extends Component {
   
         const middleware = [...contextMiddleware, ...propsMiddleware, ...configMiddleware, update]
         const altfetch = fetchWithMiddleware(middleware)
-        this.handlers[name] = new ListHandler(url, altfetch)
+        this.handlers[name] = new ListHandler(url, altfetch, options)
       } else {
         const update = createMiddleware(request => request, response => {
           if(response.request.type === METHOD.DESTROY) {
