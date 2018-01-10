@@ -11,6 +11,7 @@ const fillDefaults = object => ({
   options: {},
   noFetchOnMount: false,
   suppressUpdate: false,
+  onChange: () => {},
   ...object,
 })
 
@@ -103,10 +104,6 @@ class Endpoints extends Component {
     })
   }
 
-  shouldComponentUpdate = (nextProps, nextState) => {
-    return JSON.stringify(this.state) !== JSON.stringify(nextState)
-  }
-
   componentDidUpdate = (prevProps, prevContext) => {
     const { configs, onChange } = this.props
 
@@ -118,10 +115,14 @@ class Endpoints extends Component {
     })).reduce((prev, curr) => ({ ...prev, ...curr }))
 
     Object.keys(data).forEach(name => {
-      configs[name].onChange(data[name])
+      if (JSON.stringify(_this2.state[name]) !== JSON.stringify(prevState[name])) {
+        fillDefaults(configs[name]).onChange(data[name])
+      }
     })
 
-    onChange(data)
+    if (JSON.stringify(_this2.state) !== JSON.stringify(prevState)) {
+      onChange(data)
+    }
   }
 
   createHandlers = (props, context) => {
