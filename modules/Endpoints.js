@@ -104,7 +104,7 @@ class Endpoints extends Component {
     })
   }
 
-  componentDidUpdate = (prevProps, prevContext) => {
+  componentDidUpdate = (prevProps, prevState) => {
     const { configs, onChange } = this.props
 
     const data = Object.keys(configs).map(name => ({
@@ -115,12 +115,12 @@ class Endpoints extends Component {
     })).reduce((prev, curr) => ({ ...prev, ...curr }))
 
     Object.keys(data).forEach(name => {
-      if (JSON.stringify(_this2.state[name]) !== JSON.stringify(prevState[name])) {
+      if (JSON.stringify(this.state[name]) !== JSON.stringify(prevState[name])) {
         fillDefaults(configs[name]).onChange(data[name])
       }
     })
 
-    if (JSON.stringify(_this2.state) !== JSON.stringify(prevState)) {
+    if (JSON.stringify(this.state) !== JSON.stringify(prevState)) {
       onChange(data)
     }
   }
