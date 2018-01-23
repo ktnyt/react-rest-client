@@ -47,12 +47,12 @@ export const injectJsonHeaders = (onRequest=true, onResponse=true) => request =>
 
 export const parseJsonResponse = (destructive=false) => response => {
   if(destructive) {
-    return response.json()
+    return response.json().catch(() => { return {} })
   }
 
   const clone = response.clone()
 
-  return clone.json().then(data => {
+  return clone.json().catch(() => { return {} }).then(data => {
     response.data = data
     return response
   })
