@@ -1,40 +1,33 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 
+const register = config => {
+
+}
+
 class Client extends Component {
+  state = {}
+
   static propTypes = {
-    base: PropTypes.string.isRequired,
-    middleware: PropTypes.array,
     children: PropTypes.node.isRequired,
   }
 
-  static defaultProps = {
-    middleware: [],
-  }
-
-  static contextTypes = {
-    rest: PropTypes.object,
-  }
-
-  static childContextTypes = {
+  static childPropTypes = {
     rest: PropTypes.object.isRequired,
   }
 
   getChildContext = () => {
-    const { base, middleware } = this.props
-
     return {
       rest: {
-        ...this.context.rest,
-        base,
-        path: [],
-        middleware,
+        handlers: this.handlers,
+        response: this.state,
+        register,
       },
     }
   }
 
   render = () => {
-    return React.Children.only(this.props.children)
+    return React.children.only(this.props.children)
   }
 }
 

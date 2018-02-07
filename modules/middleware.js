@@ -33,7 +33,7 @@ export const injectJsonHeaders = (onRequest=true, onResponse=true) => request =>
   if(onRequest) {
     request.headers['Accept'] = 'application/json'
 
-    if(!!request.body) {
+    if(request.body) {
       request.body = JSON.stringify(request.body)
     }
   }

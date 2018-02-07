@@ -23,15 +23,14 @@ class ListHandler {
 
   call = (url, request, type) => this._fetch(url, { ...request, type })
 
-  browse  = (options)  => this.call(`${this.url}${this.buildParams(options)}`, {},  METHOD.BROWSE )
-  read    = (pk)       => this.call(`${this.url}/${pk}`, {},                        METHOD.READ   )
-  edit    = (pk, body) => this.call(`${this.url}/${pk}`, { method: 'PATCH', body }, METHOD.EDIT   )
-  add     = (body)     => this.call(`${this.url}`,       { method: 'POST',  body }, METHOD.ADD    )
-  destroy = (pk)       => this.call(`${this.url}/${pk}`, { method: 'DELETE'      }, METHOD.DESTROY)
-  replace = (pk, body) => this.call(`${this.url}/${pk}`, { method: 'PUT',   body }, METHOD.REPLACE)
-  wipe    = (options)  => this.call(`${this.url}${this.buildParams(options)}`, { method: 'DELETE' }, METHOD.WIPE)
-
-  fetch = (options) => this.browse()
+  browse = options => this.call(`${this.url}${this.buildParams(options)}`, {},  METHOD.BROWSE)
+  read = pk => this.call(`${this.url}/${pk}`, {}, METHOD.READ)
+  edit = (pk, body) => this.call(`${this.url}/${pk}`, { method: 'PATCH', body }, METHOD.EDIT)
+  add = (body, options) => this.call(`${this.url}${this.buildParams(options)}`, { method: 'POST',  body }, METHOD.ADD)
+  destroy = pk => this.call(`${this.url}/${pk}`, { method: 'DELETE' }, METHOD.DESTROY)
+  replace = (pk, body) => this.call(`${this.url}/${pk}`, { method: 'PUT', body }, METHOD.REPLACE)
+  wipe = options => this.call(`${this.url}${this.buildParams(options)}`, { method: 'DELETE' }, METHOD.WIPE)
+  fetch = options => this.browse(options)
 
   bind = pk => new ItemHandler(this.url, pk, this._fetch)
 }
